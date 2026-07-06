@@ -13,7 +13,6 @@
 * Gradle: Specified source/targetCompatibility and jvmTarget to 1.8
 * The credits for this version go to @OlJhonny, who called out [PR #27](https://github.com/emiliodallatorre/flutter_rtmp_broadcaster/pull/27) to fix Gradle 8 compatibility and old dependencies
 
-
 ## 2.2.6
 
 * Fixed SDK contraints for Flutter 4.0.0
