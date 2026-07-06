@@ -1,3 +1,8 @@
+## 3.0.0
+* Gradle: Migrate to AGP9
+* Android: Migrate to use Built-in Kotlin
+* Updated Example App
+
 ## 2.3.4
 
 * Updated Dependencies
