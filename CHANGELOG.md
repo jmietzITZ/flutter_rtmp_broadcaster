@@ -1,3 +1,8 @@
+## 3.0.0
+* Gradle: Migrate to AGP9
+* Android: Migrate to use Built-in Kotlin
+* Updated Example App
+
 ## 2.3.4
 
 * Updated Dependencies
@@ -7,7 +12,6 @@
 * Gradle: Replaced jcenter with mavenCentral
 * Gradle: Specified source/targetCompatibility and jvmTarget to 1.8
 * The credits for this version go to @OlJhonny, who called out [PR #27](https://github.com/emiliodallatorre/flutter_rtmp_broadcaster/pull/27) to fix Gradle 8 compatibility and old dependencies
-
 
 ## 2.2.6
 
