@@ -1,5 +1,9 @@
-## 3.0.0
-* Gradle: Migrate to AGP9
+## Unreleased
+
+* Android: Migrated from the obsolete `rtplibrary` 1.9.6 artifact to RootEncoder 2.7.2.
+* Android: Use the platform TLS socket so Android 10 and newer can negotiate TLS 1.3.
+* Android: Replaced the legacy duplicate camera implementations with the active Camera2 platform-view implementation.
+* Android: Migrate to AGP9
 * Android: Migrate to use Built-in Kotlin
 * Updated Example App
 

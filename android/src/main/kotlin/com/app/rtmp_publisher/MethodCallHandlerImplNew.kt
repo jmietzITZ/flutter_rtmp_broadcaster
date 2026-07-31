@@ -96,7 +96,7 @@ class MethodCallHandlerImplNew(
             }
 
             "startVideoStreaming" -> {
-                Log.i("Stuff", "startVideoStreaming ${call.arguments}")
+                Log.i("Stuff", "startVideoStreaming")
                 getCameraView()?.startVideoStreaming(
                     call.argument("url"),
                     call.argument("bitrate"),
@@ -105,7 +105,7 @@ class MethodCallHandlerImplNew(
             }
 
             "startVideoRecordingAndStreaming" -> {
-                Log.i("Stuff", "startVideoRecordingAndStreaming ${call.arguments}")
+                Log.i("Stuff", "startVideoRecordingAndStreaming")
                 getCameraView()?.startVideoRecordingAndStreaming(
                     call.argument("filePath"),
                     call.argument("url"),
@@ -202,7 +202,7 @@ class MethodCallHandlerImplNew(
             val enableAudio = call.argument<Boolean>("enableAudio")!!
             dartMessenger = DartMessenger(messenger, textureId)
 
-            val preset = Camera.ResolutionPreset.valueOf(resolutionPreset)
+            val preset = ResolutionPreset.valueOf(resolutionPreset)
             val previewSize = CameraUtils.computeBestPreviewSize(cameraName, preset)
             val reply: MutableMap<String, Any> = HashMap()
             reply["textureId"] = textureId

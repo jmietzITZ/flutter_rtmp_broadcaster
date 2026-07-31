@@ -49,5 +49,5 @@ kotlin {
 dependencies {
     implementation 'androidx.annotation:annotation:1.9.1'
     implementation 'androidx.core:core:1.13.1'
-    implementation 'com.github.pedroSG94.rtmp-rtsp-stream-client-java:rtplibrary:1.9.6'
+    implementation 'com.github.pedroSG94.RootEncoder:library:2.7.2'
 }

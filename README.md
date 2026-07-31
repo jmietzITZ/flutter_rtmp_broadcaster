@@ -5,7 +5,7 @@ Extend the functionality of the Flutter camera plugin with this plugin. Seamless
 Utilize a consistent API structure similar to the camera plugin, preserving existing installation requirements. A distinctive feature is the introduction of the `startStreaming(url)` API, enabling developers to initiate real-time streaming to a designated RTMP URL.
 
 This plugin employs established tools:
-- Android leverages [rtmp-rtsp-stream-client-java](https://github.com/pedroSG94/rtmp-rtsp-stream-client-java).
+- Android leverages [RootEncoder](https://github.com/pedroSG94/RootEncoder).
 - iOS integration involves [HaishinKit.swift](https://github.com/shogo4405/HaishinKit.swift).
 
 ## Features:
