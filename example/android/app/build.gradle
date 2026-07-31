@@ -23,11 +23,12 @@ if (flutterVersionName == null) {
 
 android {
     namespace 'com.app.rtmp_publisher_example'
-    compileSdk 34
+    compileSdk 36
     ndkVersion flutter.ndkVersion
 
-    sourceSets {
-        main.java.srcDirs += '../yasea/library/src'
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
     lint {
@@ -36,7 +37,7 @@ android {
 
     defaultConfig {
         applicationId "com.app.rtmp_publisher_example"
-        minSdk 21
+        minSdk flutter.minSdkVersion
         targetSdk 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
@@ -54,6 +55,12 @@ android {
         resources {
             excludes.add('project.clj')
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
     }
 }
 

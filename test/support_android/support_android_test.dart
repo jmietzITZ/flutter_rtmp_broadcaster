@@ -15,34 +15,36 @@ void main() {
     group('$Camera', () {
       final List<MethodCall> log = <MethodCall>[];
       setUpAll(() {
-        CameraTesting.channel
-            .setMockMethodCallHandler((MethodCall methodCall) async {
-          log.add(methodCall);
-          switch (methodCall.method) {
-            case 'Camera#getNumberOfCameras':
-              return 3;
-            case 'Camera#open':
-              return null;
-            case 'Camera#getCameraInfo':
-              return <dynamic, dynamic>{
-                'id': 3,
-                'orientation': 90,
-                'facing': Facing.front.toString(),
-              };
-            case 'Camera#startPreview':
-              return null;
-            case 'Camera#stopPreview':
-              return null;
-            case 'Camera#release':
-              return null;
-          }
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(CameraTesting.channel, (
+              MethodCall methodCall,
+            ) async {
+              log.add(methodCall);
+              switch (methodCall.method) {
+                case 'Camera#getNumberOfCameras':
+                  return 3;
+                case 'Camera#open':
+                  return null;
+                case 'Camera#getCameraInfo':
+                  return <dynamic, dynamic>{
+                    'id': 3,
+                    'orientation': 90,
+                    'facing': Facing.front.toString(),
+                  };
+                case 'Camera#startPreview':
+                  return null;
+                case 'Camera#stopPreview':
+                  return null;
+                case 'Camera#release':
+                  return null;
+              }
 
-          throw ArgumentError.value(
-            methodCall.method,
-            'methodCall.method',
-            'No method found for',
-          );
-        });
+              throw ArgumentError.value(
+                methodCall.method,
+                'methodCall.method',
+                'No method found for',
+              );
+            });
       });
 
       setUp(() {
@@ -55,10 +57,7 @@ void main() {
 
         expect(result, 3);
         expect(log, <Matcher>[
-          isMethodCall(
-            '$Camera#getNumberOfCameras',
-            arguments: null,
-          )
+          isMethodCall('$Camera#getNumberOfCameras', arguments: null),
         ]);
       });
 
@@ -68,11 +67,8 @@ void main() {
         expect(log, <Matcher>[
           isMethodCall(
             '$Camera#open',
-            arguments: <String, dynamic>{
-              'cameraId': 14,
-              'cameraHandle': 0,
-            },
-          )
+            arguments: <String, dynamic>{'cameraId': 14, 'cameraHandle': 0},
+          ),
         ]);
       });
 
@@ -87,7 +83,7 @@ void main() {
           isMethodCall(
             '$Camera#getCameraInfo',
             arguments: <String, dynamic>{'cameraId': 14},
-          )
+          ),
         ]);
       });
 
@@ -100,10 +96,8 @@ void main() {
         expect(log, <Matcher>[
           isMethodCall(
             '$Camera#startPreview',
-            arguments: <String, dynamic>{
-              'handle': 0,
-            },
-          )
+            arguments: <String, dynamic>{'handle': 0},
+          ),
         ]);
       });
 
@@ -116,10 +110,8 @@ void main() {
         expect(log, <Matcher>[
           isMethodCall(
             '$Camera#stopPreview',
-            arguments: <String, dynamic>{
-              'handle': 0,
-            },
-          )
+            arguments: <String, dynamic>{'handle': 0},
+          ),
         ]);
       });
 
@@ -132,10 +124,8 @@ void main() {
         expect(log, <Matcher>[
           isMethodCall(
             '$Camera#release',
-            arguments: <String, dynamic>{
-              'handle': 0,
-            },
-          )
+            arguments: <String, dynamic>{'handle': 0},
+          ),
         ]);
       });
     });

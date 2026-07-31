@@ -13,20 +13,22 @@ void main() {
     final List<MethodCall> log = <MethodCall>[];
 
     setUpAll(() {
-      CameraTesting.channel
-          .setMockMethodCallHandler((MethodCall methodCall) async {
-        log.add(methodCall);
-        switch (methodCall.method) {
-          case 'NativeTexture#allocate':
-            return 15;
-        }
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(CameraTesting.channel, (
+            MethodCall methodCall,
+          ) async {
+            log.add(methodCall);
+            switch (methodCall.method) {
+              case 'NativeTexture#allocate':
+                return 15;
+            }
 
-        throw ArgumentError.value(
-          methodCall.method,
-          'methodCall.method',
-          'No method found for',
-        );
-      });
+            throw ArgumentError.value(
+              methodCall.method,
+              'methodCall.method',
+              'No method found for',
+            );
+          });
     });
 
     setUp(() {
@@ -41,17 +43,17 @@ void main() {
 
         final CameraController controller1 =
             CameraController.customConfigurator(
-          description: description,
-          configurator: configurator,
-        );
+              description: description,
+              configurator: configurator,
+            );
 
         controller1.initialize();
 
         final CameraController controller2 =
             CameraController.customConfigurator(
-          description: description,
-          configurator: configurator,
-        );
+              description: description,
+              configurator: configurator,
+            );
 
         controller2.initialize();
 
@@ -78,7 +80,7 @@ void main() {
           isMethodCall(
             '$NativeTexture#allocate',
             arguments: <String, dynamic>{'textureHandle': 0},
-          )
+          ),
         ]);
       });
     });
