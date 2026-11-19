@@ -2,6 +2,11 @@ package com.app.rtmp_publisher
 
 import android.app.Activity
 import android.graphics.Bitmap
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.util.Log
 import android.view.SurfaceHolder
 import android.view.View
@@ -28,11 +33,25 @@ class CameraNativeView(
     private val rtmpCamera = RtmpCamera2(glView, this)
     private var isSurfaceCreated = false
     private var fps = 0
+    private var retryPending = false
+    private val connectivity = activity!!.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    private val networkCallback = object : ConnectivityManager.NetworkCallback() {
+        override fun onLost(network: Network) {
+            activity?.runOnUiThread {
+                if (rtmpCamera.isStreaming) onConnectionFailed("Network lost")
+            }
+        }
+    }
 
     init {
         glView.holder.addCallback(this)
+        connectivity.registerNetworkCallback(
+            NetworkRequest.Builder().addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET).build(),
+            networkCallback
+        )
         rtmpCamera.streamClient.setSocketType(SocketType.JAVA)
         rtmpCamera.streamClient.setReTries(MAX_RETRIES)
+        rtmpCamera.streamClient.shouldFailOnRead(true)
         rtmpCamera.setFpsListener { fps = it }
     }
 
@@ -47,12 +66,21 @@ class CameraNativeView(
         isSurfaceCreated = false
     }
 
-    override fun onConnectionStarted(url: String) = Unit
+    override fun onConnectionStarted(url: String) {
+        activity?.runOnUiThread { retryPending = false }
+    }
 
-    override fun onConnectionSuccess() = Unit
+    override fun onConnectionSuccess() {
+        activity?.runOnUiThread {
+            retryPending = false
+            dartMessenger?.send(DartMessenger.EventType.RTMP_CONNECTED, null)
+        }
+    }
 
     override fun onConnectionFailed(reason: String) {
         activity?.runOnUiThread {
+            if (retryPending || !rtmpCamera.isStreaming) return@runOnUiThread
+            retryPending = true
             if (rtmpCamera.streamClient.reTry(RETRY_DELAY_MS, reason, null)) {
                 dartMessenger?.send(DartMessenger.EventType.RTMP_RETRY, reason)
             } else {
@@ -285,6 +313,7 @@ class CameraNativeView(
     override fun getView(): View = glView
 
     override fun dispose() {
+        connectivity.unregisterNetworkCallback(networkCallback)
         close()
         glView.holder.removeCallback(this)
         isSurfaceCreated = false

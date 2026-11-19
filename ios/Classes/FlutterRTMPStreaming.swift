@@ -7,6 +7,7 @@ import HaishinKit
 import os
 import ReplayKit
 import VideoToolbox
+import Network
 
 @objc
 public class FlutterRTMPStreaming : NSObject {
@@ -15,6 +16,9 @@ public class FlutterRTMPStreaming : NSObject {
     private var url: String? = nil
     private var name: String? = nil
     private var retries: Int = 0
+    private var reconnectWorkItem: DispatchWorkItem?
+    private var isClosed = false
+    private var networkMonitor: NWPathMonitor?
     private let eventSink: FlutterEventSink
     private let myDelegate = MyRTMPStreamQoSDelagate()
     
@@ -25,6 +29,15 @@ public class FlutterRTMPStreaming : NSObject {
     
     @objc
     public func open(url: String, width: Int, height: Int, bitrate: Int) {
+        isClosed = false
+        let monitor = NWPathMonitor()
+        monitor.pathUpdateHandler = { [weak self] path in
+            guard let self = self, !self.isClosed, path.status == .unsatisfied else { return }
+            self.retryConnection("Network unavailable")
+            self.rtmpConnection.close()
+        }
+        networkMonitor = monitor
+        monitor.start(queue: .main)
         rtmpStream = RTMPStream(connection: rtmpConnection)
         rtmpStream.captureSettings = [
             .sessionPreset: AVCaptureSession.Preset.hd1280x720,
@@ -33,6 +46,7 @@ public class FlutterRTMPStreaming : NSObject {
         ]
         rtmpConnection.addEventListener(.rtmpStatus, selector:#selector(rtmpStatusHandler), observer: self)
         rtmpConnection.addEventListener(.ioError, selector: #selector(rtmpErrorHandler), observer: self)
+        rtmpStream.addEventListener(.rtmpStatus, selector: #selector(rtmpStatusHandler), observer: self)
         
         let uri = URL(string: url)
         self.name = uri?.pathComponents.last
@@ -73,6 +87,11 @@ public class FlutterRTMPStreaming : NSObject {
     
     @objc
     private func rtmpStatusHandler(_ notification: Notification) {
+        if !Thread.isMainThread {
+            DispatchQueue.main.async { [weak self] in self?.rtmpStatusHandler(notification) }
+            return
+        }
+        guard !isClosed else { return }
         let e = Event.from(notification)
         guard let data: ASObject = e.data as? ASObject, let code: String = data["code"] as? String else {
             return
@@ -81,20 +100,19 @@ public class FlutterRTMPStreaming : NSObject {
         
         switch code {
         case RTMPConnection.Code.connectSuccess.rawValue:
+            reconnectWorkItem?.cancel()
+            reconnectWorkItem = nil
             rtmpStream.publish(name)
+            break
+        case RTMPStream.Code.publishStart.rawValue:
             retries = 0
+            eventSink(["event": "rtmp_connected"])
             break
         case RTMPConnection.Code.connectFailed.rawValue, RTMPConnection.Code.connectClosed.rawValue:
-            guard retries <= 3 else {
-                eventSink(["event" : "error",
-                           "errorDescription" : "connection failed " + e.type.rawValue])
-                return
-            }
-            retries += 1
-            Thread.sleep(forTimeInterval: pow(2.0, Double(retries)))
-            rtmpConnection.connect(url!)
-            eventSink(["event" : "rtmp_retry",
-                       "errorDescription" : "connection failed " + e.type.rawValue])
+            retryConnection("connection failed " + code)
+            break
+        case RTMPConnection.Code.connectRejected.rawValue, RTMPStream.Code.publishBadName.rawValue, RTMPStream.Code.failed.rawValue:
+            eventSink(["event": "error", "errorDescription": code])
             break
         default:
             break
@@ -106,17 +124,26 @@ public class FlutterRTMPStreaming : NSObject {
         if #available(iOS 10.0, *) {
             os_log("%s", notification.name.rawValue)
         }
-        guard retries <= 3 else {
-            eventSink(["event" : "rtmp_stopped",
-                       "errorDescription" : "rtmp disconnected"])
-            return
+        retryConnection("rtmp disconnected")
+    }
+
+    private func retryConnection(_ reason: String) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self, !self.isClosed, self.reconnectWorkItem == nil else { return }
+            guard self.retries < 3, let url = self.url else {
+                self.eventSink(["event": "rtmp_stopped", "errorDescription": reason])
+                return
+            }
+            self.retries += 1
+            self.eventSink(["event": "rtmp_retry", "errorDescription": reason])
+            let retry = DispatchWorkItem { [weak self] in
+                guard let self = self, !self.isClosed else { return }
+                self.reconnectWorkItem = nil
+                self.rtmpConnection.connect(url)
+            }
+            self.reconnectWorkItem = retry
+            DispatchQueue.main.asyncAfter(deadline: .now() + pow(2.0, Double(self.retries)), execute: retry)
         }
-        retries+=1
-        Thread.sleep(forTimeInterval: pow(2.0, Double(retries)))
-        rtmpConnection.connect(url!)
-        eventSink(["event" : "rtmp_retry",
-                   "errorDescription" : "rtmp disconnected"])
-        
     }
     
     @objc
@@ -183,6 +210,14 @@ public class FlutterRTMPStreaming : NSObject {
     
     @objc
     public func close() {
+        isClosed = true
+        networkMonitor?.cancel()
+        networkMonitor = nil
+        reconnectWorkItem?.cancel()
+        reconnectWorkItem = nil
+        rtmpConnection.removeEventListener(.rtmpStatus, selector: #selector(rtmpStatusHandler), observer: self)
+        rtmpConnection.removeEventListener(.ioError, selector: #selector(rtmpErrorHandler), observer: self)
+        rtmpStream?.removeEventListener(.rtmpStatus, selector: #selector(rtmpStatusHandler), observer: self)
         rtmpConnection.close()
     }
 }
